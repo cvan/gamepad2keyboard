@@ -418,8 +418,9 @@ document.body.addEventListener('keypress', function (e) {
   });
 
   e.target.value = capturedKeys.join(' + ');
+  addNewRowIfNeeded();
 
-  var nextGamepadTextbox = parentRow.querySelector('input[data-device=gamepad]');
+  var nextGamepadTextbox = parentRow.nextSibling.querySelector('input[data-device=gamepad]');
   if (nextGamepadTextbox) {
     nextGamepadTextbox.focus();
   }
@@ -452,7 +453,7 @@ on('buttonpress', function (e) {
 
   el.value = capturedKeys.join(' + ');
   addNewRowIfNeeded();
-  var nextKeyboardTextbox = parentRow.nextSibling.querySelector('input[data-device=keyboard]');
+  var nextKeyboardTextbox = parentRow.querySelector('input[data-device=keyboard]');
   if (nextKeyboardTextbox) {
     nextKeyboardTextbox.focus();
   }
