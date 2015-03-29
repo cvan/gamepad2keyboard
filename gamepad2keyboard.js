@@ -161,6 +161,7 @@ function poll() {
 
     gd.buttons.forEach(function (button, idx) {
       var buttonState = {
+        index: idx,
         pressed: button.pressed,
         value: button.value
       };
@@ -169,6 +170,13 @@ function poll() {
           state.buttons[idx].value !== buttonState.value) {
 
         console.log('button #%s changed: %o', idx, buttonState);
+        if (buttonState.pressed) {
+          emit('buttondown', buttonState);
+        } else {
+          emit('buttonup', buttonState);
+          emit('buttonpress', buttonState);
+        }
+
       }
 
       state.buttons[idx] = buttonState;
@@ -206,6 +214,10 @@ function on(name, func) {
 
 function off(name) {
   listeners[name] = [];
+}
+
+function defaultsTo(value, defaultValue) {
+  return typeof value === 'undefined' ? defaultValue : value;
 }
 
 var KEY_PROPS = [
@@ -328,11 +340,6 @@ function getSyntheticKeyProps(e) {
 }
 
 
-// window.addEventListener('keydown', function (e) {
-//   console.log(getSyntheticKeyProps(e));
-// });
-
-
 function closest(el, sel) {
   if (el !== null) {
     return el.matches(sel) ? el :
@@ -354,23 +361,25 @@ function addNewRow() {
   controlsTable.appendChild(tr);
 }
 
+function addNewRowIfNeeded() {
+  if (getLastTextbox().value) {
+    addNewRow();
+  }
+}
+
 addNewRow();
 
 var getLastTextbox = function () {
-  return document.querySelector('tr:last-child td:last-child input');
+  return document.querySelector('tr:last-child td:last-child input') || {};
 };
 
 var captures = {
   keyboard: {},
   gamepad: {}
 };
-window.captures = captures;
 
 
 document.body.addEventListener('focus', function (e) {
-  if (e.value && e.target === getLastTextbox()) {
-    addNewRow();
-  }
   e.target.setAttribute('data-placeholder', e.target.placeholder);
   e.target.placeholder = '';
 }, true);
@@ -389,7 +398,8 @@ document.body.addEventListener('keypress', function (e) {
     return;
   }
 
-  var parentRowNum = closest(e.target, 'tr').getAttribute('data-row');
+  var parentRow = closest(e.target, 'tr');
+  var parentRowNum = parentRow.getAttribute('data-row');
 
   if (!(parentRowNum in captures[controlDevice])) {
     captures[controlDevice][parentRowNum] = [];
@@ -408,7 +418,45 @@ document.body.addEventListener('keypress', function (e) {
   });
 
   e.target.value = capturedKeys.join(' + ');
+
+  var nextGamepadTextbox = parentRow.querySelector('input[data-device=gamepad]');
+  if (nextGamepadTextbox) {
+    nextGamepadTextbox.focus();
+  }
 }, true);
+
+
+on('buttonpress', function (e) {
+  var el = document.activeElement;
+  if (!el) {
+    return;
+  }
+
+  var controlDevice = el.getAttribute('data-device');
+  if (controlDevice !== 'gamepad') {
+    return;
+  }
+
+  var parentRow = closest(el, 'tr');
+  var parentRowNum = parentRow.getAttribute('data-row');
+
+  if (!(parentRowNum in captures.gamepad)) {
+    captures.gamepad[parentRowNum] = [];
+  }
+
+  captures.gamepad[parentRowNum].push(e);
+
+  var capturedKeys = captures.gamepad[parentRowNum].map(function (x) {
+    return 'button[' + defaultsTo(x.index, 'unknown') + ']';
+  });
+
+  el.value = capturedKeys.join(' + ');
+  addNewRowIfNeeded();
+  var nextKeyboardTextbox = parentRow.nextSibling.querySelector('input[data-device=keyboard]');
+  if (nextKeyboardTextbox) {
+    nextKeyboardTextbox.focus();
+  }
+});
 
 
 
