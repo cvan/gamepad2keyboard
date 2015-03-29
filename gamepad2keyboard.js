@@ -140,7 +140,7 @@ function poll() {
 
     var gd = new GamepadDevice(gamepad);
 
-    console.log(gd.vendor_id);
+    // console.log(gd.vendor_id);
 
 
     // TODO: Update state based on buttons and axes.
@@ -235,52 +235,126 @@ for (i = 1; i < 25; i++) {
   KEYCODES_TO_KEYS[111 + i] = 'F' + i;
 }
 
-// Printable characters.
+// Printable ASCII characters.
 var letter = '';
 for (i = 65; i < 91; i++) {
   letter = String.fromCharCode(i);
   KEYCODES_TO_KEYS[i] = [letter.toLowerCase(), letter.toUpperCase()];
 }
 
+// Polyfill `key` on `KeyboardEvent`.
+var testKeyboardEvent = new KeyboardEvent('keydown');
+if (!('key' in testKeyboardEvent)) {
+  Object.defineProperty(KeyboardEvent.prototype, 'key', {
+    get: function (x) {
+      var key = KEYCODES_TO_KEYS[this.which || this.keyCode];
 
+      if (Array.isArray(key)) {
+        key = key[+this.shiftKey];
+      }
 
-// For now this method only works for ASCII characters and emulates the shift
-// key state on US keyboard layout.
-
-console.log(KEYCODES_TO_KEYS)
+      return key;
+    }
+  });
+}
 
 
 function getSyntheticKeyProps(e) {
   var obj = {};
-
   KEY_PROPS.forEach(function (prop) {
     obj[prop] = e[prop];
   });
-
-  if (!obj.key) {
-    obj.key = KEYCODES_TO_KEYS[obj.which || obj.keyCode];
-
-    if (Array.isArray(obj.key)) {
-      obj.key = obj.key[+obj.shiftKey];
-    }
-  }
-
   return obj;
 }
 
+
 // window.addEventListener('keydown', function (e) {
-//   console.log(e);
+//   console.log(getSyntheticKeyProps(e));
 // });
 
-// window.addEventListener('keyup', function (e) {
-//   console.log(e);
-// });
 
-window.addEventListener('keydown', function (e) {
-  console.log(getSyntheticKeyProps(e));
-});
+function closest(el, sel) {
+  if (el !== null) {
+    return el.matches(sel) ? el :
+      (el.querySelector(sel) || closest(el.parentNode, sel));
+  }
+}
+
+
+var controlsRowTemplate = document.querySelector('#controlsRowTemplate');
+
+var controlsTable = document.querySelector('.controlsTableBody');
+
+var rowNum = 0;
+
+function addNewRow() {
+  var tr = document.createElement('tr');
+  tr.setAttribute('data-row', rowNum++);
+  tr.innerHTML = controlsRowTemplate.innerHTML;
+  controlsTable.appendChild(tr);
+}
+
+addNewRow();
+
+var getLastTextbox = function () {
+  return document.querySelector('tr:last-child td:last-child input');
+};
+
+var captures = {
+  keyboard: {},
+  gamepad: {}
+};
+window.captures = captures;
+
+
+document.body.addEventListener('focus', function (e) {
+  if (e.target === getLastTextbox()) {
+    addNewRow();
+  }
+  e.target.setAttribute('data-placeholder', e.target.placeholder);
+  e.target.placeholder = '';
+}, true);
+
+
+document.body.addEventListener('blur', function (e) {
+  if (!e.value) {
+    e.target.placeholder = e.target.getAttribute('data-placeholder')
+  }
+}, true);
+
+
+document.body.addEventListener('keydown', function (e) {
+  var controlDevice = e.target.getAttribute('data-device');
+  if (!controlDevice) {
+    return;
+  }
+
+  var parentRowNum = closest(e.target, 'tr').getAttribute('data-row');
+
+  console.log(e.target, parentRowNum);
+
+  if (!(parentRowNum in captures[controlDevice])) {
+    captures[controlDevice][parentRowNum] = [];
+  }
+
+  var eventProps = getSyntheticKeyProps(e);
+
+  captures[controlDevice][parentRowNum].push(eventProps);
+
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    captures[controlDevice][parentRowNum] = [];
+  }
+
+  var capturedKeys = captures[controlDevice][parentRowNum].map(function (x) {
+    return x.key;
+  });
+
+  e.target.value = capturedKeys.join(' + ');
+}, true);
 
 // collect all the keys during that capture period. play them back.
+
+
 
 // getJSON('mappings.json', function (err, data) {
 //   if (err) {

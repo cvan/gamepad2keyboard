@@ -3,8 +3,20 @@
   <head>
     <meta charset="utf-8">
     <title>gamepad2keyboard demo</title>
+    <style>
+      body { font-family: sans-serif; }
+      input, textarea, select { font-size: 1.5rem; line-height: 1; font-family: inherit; padding: .5rem; }
+    </style>
   </head>
   <body>
+    <table class="controlsTable">
+      <tbody class="controlsTableBody">
+      </tbody>
+    </table>
+    <script id="controlsRowTemplate" type="text/template">
+      <td><input type="text" name="control_key" data-device="keyboard" readonly placeholder="enter keyboard key"></td>
+      <td><input type="text" name="control_button" data-device="gamepad" readonly placeholder="press gamepad button"></td>
+    </script>
     <script src="../gamepad2keyboard.js"></script>
   </body>
 </html>
