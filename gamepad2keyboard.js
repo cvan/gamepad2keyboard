@@ -1,7 +1,5 @@
 (function (window, raf, caf) {
 
-'use strict';
-
 var vendors = ['ms', 'moz', 'webkit', 'o'];
 for (var i = 0; i < vendors.length && !window[raf]; ++x) {
   window[raf] = window[vendors[x] + 'RequestAnimationFrame'];
@@ -74,6 +72,8 @@ function getGamepads() {
 }
 
 
+var AXIS_THRESHOLD = 0.25;
+
 var gamepadIdx = 0;
 var gamepadContinuePolling = false;
 var gamepadConnected = false;
@@ -123,9 +123,22 @@ GamepadDevice.prototype._getIds = function (id) {
 
 
 var state = {
-  buttons: [],
-  axes: []
+  buttons: {},
+  axes: {}
 };
+
+for (var i = 0; i < 17; i++) {
+  state.buttons[i] = {
+    pressed: false,
+    value: 0.0
+  };
+}
+
+for (var i = 0; i < 4; i++) {
+  state.axes[i] = [0.0];
+}
+
+
 var gamepad;
 
 function poll() {
@@ -138,23 +151,40 @@ function poll() {
       gamepad = getGamepads()[gamepadIdx];
     }
 
-    if (!gamepad) {
-      return;
-    }
+    var gd = gamepad;
 
-    var gd = new GamepadDevice(gamepad);
+    // if (!gamepad) {
+    //   return;
+    // }
 
-    gd.buttons.forEach(function (button) {
-      console.log('button', button);
+    // var gd = new GamepadDevice(gamepad);
+
+    gd.buttons.forEach(function (button, idx) {
+      var buttonState = {
+        pressed: button.pressed,
+        value: button.value
+      };
+
+      if (state.buttons[idx].pressed !== buttonState.pressed ||
+          state.buttons[idx].value !== buttonState.value) {
+
+        console.log('button #%s changed: %o', idx, buttonState);
+      }
+
+      state.buttons[idx] = buttonState;
     });
 
-    // TODO: Update state based on buttons and axes.
-    state = {
-      buttons: buttons,
-      axes: axes
-    };
+    gd.axes.forEach(function (axis, idx) {
+      if (Math.abs(axis) > AXIS_THRESHOLD && state.axes[idx] != axis) {
+        console.log('axis #%s changed: %s', idx, axis);
+      }
+
+      state.axes[idx] = axis;
+    });
   });
 }
+
+poll();
 
 var listeners = {};
 
@@ -177,8 +207,6 @@ function on(name, func) {
 function off(name) {
   listeners[name] = [];
 }
-
-poll();
 
 var KEY_PROPS = [
   'altKey',
@@ -392,8 +420,6 @@ document.body.addEventListener('keypress', function (e) {
 //   console.log(data);
 // });
 
-
-poll();
 
 
 })(this, 'requestAnimationFrame', 'cancelAnimationFrame');
