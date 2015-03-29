@@ -1,0 +1,13 @@
+{
+  "mappings": [
+    {
+      "name": "79-6-Generic   USB  Joystick",
+      "platform": "mac",
+      "browser": "firefox",
+      "vendor_id": "79",
+      "product_id": "6",
+      "keys": {
+      }
+    }
+  ]
+}
