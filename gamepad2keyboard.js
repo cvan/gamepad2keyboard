@@ -98,10 +98,11 @@ var mapping = {
 };
 
 function GamepadDevice(gamepad) {
-  this.gamepad = gamepad;
-  this.id = this.gamepad.id;
-  this.pretty_id = this.id.replace(/\s\s+/g, '').toLowerCase();
-  this._ids = this._getIds(gamepad.id);
+  ['axes', 'buttons', 'connected', 'id', 'index', 'mapping'].forEach(function (prop) {
+    this[prop] = gamepad[prop];
+  }.bind(this));
+  this.pretty_id = this.id.replace(/\s\s+/g, ' ').toLowerCase();
+  this._ids = this._getIds(this.id);
   this.vendor_id = this._ids[0];
   this.product_id = this._ids[0];
 }
@@ -121,7 +122,10 @@ GamepadDevice.prototype._getIds = function (id) {
 };
 
 
-var state = {};
+var state = {
+  buttons: [],
+  axes: []
+};
 var gamepad;
 
 function poll() {
@@ -140,13 +144,41 @@ function poll() {
 
     var gd = new GamepadDevice(gamepad);
 
-    // console.log(gd.vendor_id);
-
+    gd.buttons.forEach(function (button) {
+      console.log('button', button);
+    });
 
     // TODO: Update state based on buttons and axes.
-    state = {};
+    state = {
+      buttons: buttons,
+      axes: axes
+    };
   });
 }
+
+var listeners = {};
+
+function emit(name, data) {
+  if (name in listeners) {
+    listeners[name].forEach(function (func) {
+      func(data);
+    });
+  }
+}
+
+function on(name, func) {
+  if (name in listeners) {
+    listeners[name].push(func);
+  } else {
+    listeners[name] = [func];
+  }
+}
+
+function off(name) {
+  listeners[name] = [];
+}
+
+poll();
 
 var KEY_PROPS = [
   'altKey',
@@ -308,7 +340,7 @@ window.captures = captures;
 
 
 document.body.addEventListener('focus', function (e) {
-  if (e.target === getLastTextbox()) {
+  if (e.value && e.target === getLastTextbox()) {
     addNewRow();
   }
   e.target.setAttribute('data-placeholder', e.target.placeholder);
@@ -323,15 +355,13 @@ document.body.addEventListener('blur', function (e) {
 }, true);
 
 
-document.body.addEventListener('keydown', function (e) {
+document.body.addEventListener('keypress', function (e) {
   var controlDevice = e.target.getAttribute('data-device');
-  if (!controlDevice) {
+  if (controlDevice !== 'keyboard') {
     return;
   }
 
   var parentRowNum = closest(e.target, 'tr').getAttribute('data-row');
-
-  console.log(e.target, parentRowNum);
 
   if (!(parentRowNum in captures[controlDevice])) {
     captures[controlDevice][parentRowNum] = [];
@@ -351,8 +381,6 @@ document.body.addEventListener('keydown', function (e) {
 
   e.target.value = capturedKeys.join(' + ');
 }, true);
-
-// collect all the keys during that capture period. play them back.
 
 
 
