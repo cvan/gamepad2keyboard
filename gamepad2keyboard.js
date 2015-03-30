@@ -219,6 +219,7 @@ function poll() {
           console.log('axis #%s average: %s', idx, roundedAvg);
 
           var axisChangeState = {
+            type: 'axischange',
             index: idx,
             value: roundedAvg
           };
@@ -240,7 +241,8 @@ var listeners = {};
 function emit(name, data) {
   if (name in listeners) {
     listeners[name].forEach(function (func) {
-      func(data);
+      var eventData = utils.extend(data, {type: name});
+      func(eventData);
     });
   }
 }
@@ -276,6 +278,20 @@ utils.closest = function (el, sel) {
     return el.matches(sel) ? el :
       (el.querySelector(sel) || utils.closest(el.parentNode, sel));
   }
+};
+
+utils.extend = function (origin, add) {
+  // Don't do anything if add isn't an object.
+  if (!add || typeof add !== 'object') {
+    return origin;
+  }
+
+  var keys = Object.keys(add);
+  var i = keys.length;
+  while (i--) {
+    origin[keys[i]] = add[keys[i]];
+  }
+  return origin;
 };
 
 var KEY_PROPS = [
@@ -465,6 +481,7 @@ document.body.addEventListener('keypress', function (e) {
   if (nextGamepadTextbox) {
     nextGamepadTextbox.focus();
   }
+  updateMappingOutput();
 }, true);
 
 
@@ -498,6 +515,7 @@ on('buttonpress', function (e) {
   if (nextKeyboardTextbox) {
     nextKeyboardTextbox.focus();
   }
+  updateMappingOutput();
 });
 
 on('axischange', function (e) {
@@ -530,8 +548,29 @@ on('axischange', function (e) {
   if (nextKeyboardTextbox) {
     nextKeyboardTextbox.focus();
   }
+  updateMappingOutput();
 });
 
+
+var controlsMappingEl = document.querySelector('#controlsMapping');
+
+function updateMappingOutput() {
+  var numKeyboardKeys = Object.keys(captures.keyboard).length;
+  var numGamepadKeys = Object.keys(captures.gamepad).length;
+  var formattedMapping = [];
+
+  for (var i = 0; i < Math.max(numKeyboardKeys, numGamepadKeys); i++) {
+    formattedMapping.push([captures.gamepad[i][0], captures.keyboard[i]]);
+  }
+
+  controlsMappingEl.value = JSON.stringify(formattedMapping, null, 2);
+}
+
+updateMappingOutput();
+
+controlsMappingEl.addEventListener('focus', function () {
+  this.select();
+});
 
 
 // getJSON('mappings.json', function (err, data) {
