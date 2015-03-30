@@ -1,3 +1,5 @@
+// mapper - generates the gamepad → keyboard mappings.
+
 (function (window, raf, caf) {
 
 var vendors = ['ms', 'moz', 'webkit', 'o'];
@@ -38,28 +40,6 @@ function loop(cb) {
   });
 }
 
-function getJSON(url, cb) {
-  var xhr = new XMLHttpRequest();
-  xhr.open('get', url);
-  xhr.onreadystatechange = handler;
-  xhr.responseType = 'json';
-  xhr.setRequestHeader('Accept', 'application/json');
-  xhr.send();
-
-  function handler() {
-    if (this.readyState === this.DONE) {
-      if (this.status === 200) {
-        cb(null, this.response);
-      } else {
-        var errorMsg = '[getJSON] `' + url + '` failed\nStatus:   ' + this.status;
-        if (this.response.message) {
-          errorMsg += '\nResponse: ' + this.response.message;
-        }
-        cb(new Error(errorMsg));
-      }
-    }
-  };
-};
 
 function getGamepads() {
   var apis = ['getGamepads', 'webkitGetGamepads', 'webkitGamepads'];
@@ -614,16 +594,6 @@ updateMappingOutput();
 controlsMappingEl.addEventListener('focus', function () {
   this.select();
 });
-
-
-// getJSON('mappings.json', function (err, data) {
-//   if (err) {
-//     return alert(err);
-//   }
-
-//   console.log(data);
-// });
-
 
 
 })(this, 'requestAnimationFrame', 'cancelAnimationFrame');
