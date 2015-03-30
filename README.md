@@ -8,3 +8,8 @@ Synthesises JavaScript browser keyboard events from button/axis changes from the
 ## Licence
 
 [MIT Licence](LICENCE)
+
+
+## Contributing
+
+[Contributions are very welcome!](CONTRIBUTING.md)
