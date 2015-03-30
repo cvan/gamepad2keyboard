@@ -1,15 +1,13 @@
 // mapper - generates the gamepad → keyboard mappings.
 
-(function (window, raf, caf) {
-
 var vendors = ['ms', 'moz', 'webkit', 'o'];
-for (var i = 0; i < vendors.length && !window[raf]; ++x) {
-  window[raf] = window[vendors[x] + 'RequestAnimationFrame'];
-  window[caf] = (window[vendors[x] + 'CancelAnimationFrame'] ||
-                 window[vendors[x] + 'CancelRequestAnimationFrame']);
+for (var i = 0; i < vendors.length && !window.requestAnimationFrame; ++x) {
+  window.requestAnimationFrame = window[vendors[x] + 'RequestAnimationFrame'];
+  window.cancelAnimationFrame = (window[vendors[x] + 'CancelAnimationFrame'] ||
+                                 window[vendors[x] + 'CancelRequestAnimationFrame']);
 }
 
-if (!window[raf]) {
+if (!window.requestAnimationFrame) {
   var queue = [];
 
   window.setInterval(function () {
@@ -22,19 +20,19 @@ if (!window[raf]) {
     queue = [];
   }, 1000 / 60);
 
-  window[raf] = function (cb) {
+  window.requestAnimationFrame = function (cb) {
     return queue.push(cb) - 1;
   };
 }
 
-if (!window[caf]) {
-  window[caf] = function (id) {
+if (!window.cancelAnimationFrame) {
+  window.cancelAnimationFrame = function (id) {
     queue[id] = false;
   };
 }
 
 function loop(cb) {
-  window[raf](function () {
+  window.requestAnimationFrame(function () {
     cb();
     loop(cb);
   });
@@ -130,6 +128,10 @@ function poll() {
 
     if (!gamepad) {
       gamepad = getGamepads()[gamepadIdx];
+    }
+
+    if (!gamepad) {
+      return;
     }
 
     gamepad.buttons.forEach(function (button, idx) {
@@ -594,6 +596,3 @@ updateMappingOutput();
 controlsMappingEl.addEventListener('focus', function () {
   this.select();
 });
-
-
-})(this, 'requestAnimationFrame', 'cancelAnimationFrame');

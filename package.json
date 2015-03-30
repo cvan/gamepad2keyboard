@@ -1,0 +1,31 @@
+{
+  "name": "gamepad2keyboard",
+  "version": "0.0.1",
+  "description": "synthesises JavaScript browser keyboard events from gamepad controls",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npm run minify",
+    "browserify": "mkdir -p dist && browserify -s Gamepad2Keyboard -r ./src/mapper.js -o ./dist/mapper.js",
+    "minify": "npm run browserify && uglifyjs ./dist/mapper.js -c warnings=false -m > ./dist/mapper.min.js",
+    "watch": "npm run build && onchange src/*.js src/**/*.js -- npm run build"
+  },
+  "author": "cvan",
+  "license": "MIT",
+  "dependencies": {
+    "browserify": "^9.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^1.3.7",
+    "onchange": "^1.0.0",
+    "uglify-js": "^2.4.19"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cvan/gamepad2keyboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cvan/gamepad2keyboard/issues"
+  },
+  "homepage": "https://github.com/cvan/gamepad2keyboard"
+}
