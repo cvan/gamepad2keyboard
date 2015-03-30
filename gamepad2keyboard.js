@@ -104,7 +104,7 @@ function GamepadDevice(gamepad) {
   this.pretty_id = this.id.replace(/\s\s+/g, ' ').toLowerCase();
   this._ids = this._getIds(this.id);
   this.vendor_id = this._ids[0];
-  this.product_id = this._ids[0];
+  this.product_id = this._ids[1];
 }
 
 GamepadDevice.prototype._getIds = function (id) {
@@ -152,15 +152,7 @@ function poll() {
       gamepad = getGamepads()[gamepadIdx];
     }
 
-    var gd = gamepad;
-
-    // if (!gamepad) {
-    //   return;
-    // }
-
-    // var gd = new GamepadDevice(gamepad);
-
-    gd.buttons.forEach(function (button, idx) {
+    gamepad.buttons.forEach(function (button, idx) {
       var buttonState = {
         index: idx,
         pressed: button.pressed,
@@ -183,7 +175,7 @@ function poll() {
       state.buttons[idx] = buttonState;
     });
 
-    gd.axes.forEach(function (axis, idx) {
+    gamepad.axes.forEach(function (axis, idx) {
       var axisMoveState = {
         index: idx,
         value: axis
@@ -265,6 +257,41 @@ var utils = {};
 utils.defaultsTo = function (value, defaultValue) {
   return typeof value === 'undefined' ? defaultValue : value;
 };
+
+utils.getBrowser = function () {
+  if (!!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0) {
+    // Opera 8.0+ (UA detection to detect Blink/v8-powered Opera).
+    return 'opera';
+  } else if (!!window.chrome) {
+    // Chrome 1+.
+    return 'chrome';
+  } else if (typeof InstallTrigger !== 'undefined') {
+    // Firefox 1.0+.
+    return 'firefox';
+  } else if (Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0) {
+    // At least Safari 3+: "[object HTMLElementConstructor]".
+    return 'safari';
+  } else if (/*@cc_on!@*/false || !!document.documentMode) {
+    // At least IE6.
+    return 'ie';
+  }
+};
+
+utils.browser = utils.getBrowser();
+
+utils.getPlatform = function () {
+  if (navigator.platform.match(/^linux/i)) {
+    return 'linux';
+  }
+  if (navigator.platform.match(/^mac/i)) {
+    return 'mac';
+  }
+  if (navigator.platform.match(/^win/i)) {
+    return 'win';
+  }
+};
+
+utils.platform = utils.getPlatform();
 
 utils.getAverage = function (list) {
   var sum = list.reduce(function (a, b) {
@@ -555,15 +582,31 @@ on('axischange', function (e) {
 var controlsMappingEl = document.querySelector('#controlsMapping');
 
 function updateMappingOutput() {
-  var numKeyboardKeys = Object.keys(captures.keyboard).length;
-  var numGamepadKeys = Object.keys(captures.gamepad).length;
-  var formattedMapping = [];
-
-  for (var i = 0; i < Math.max(numKeyboardKeys, numGamepadKeys); i++) {
-    formattedMapping.push([captures.gamepad[i][0], captures.keyboard[i]]);
+  if (!gamepad) {
+    controlsMappingEl.value = '';
+    return;
   }
 
-  controlsMappingEl.value = JSON.stringify(formattedMapping, null, 2);
+  var numKeyboardKeys = Object.keys(captures.keyboard).length;
+  var numGamepadKeys = Object.keys(captures.gamepad).length;
+
+  var gd = new GamepadDevice(gamepad);
+
+  var output = {
+    name: gd.id,
+    pretty_name: gd.pretty_id,
+    browser: utils.browser,
+    platform: utils.platform,
+    vendor_id: gd.vendor_id,
+    product_id: gd.product_id,
+    keys: []
+  };
+
+  for (var i = 0; i < Math.max(numKeyboardKeys, numGamepadKeys); i++) {
+    output.keys.push([captures.gamepad[i][0], captures.keyboard[i]]);
+  }
+
+  controlsMappingEl.value = JSON.stringify(output, null, 2);
 }
 
 updateMappingOutput();
