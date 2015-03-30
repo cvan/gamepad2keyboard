@@ -140,6 +140,7 @@ for (var i = 0; i < 4; i++) {
 
 
 var gamepad;
+var waitingForAxisEndTimeout;
 
 function poll() {
   loop(function () {
@@ -183,11 +184,51 @@ function poll() {
     });
 
     gd.axes.forEach(function (axis, idx) {
-      if (Math.abs(axis) > AXIS_THRESHOLD && state.axes[idx] != axis) {
+      var axisMoveState = {
+        index: idx,
+        value: axis
+      };
+
+      if (Math.abs(axis) > AXIS_THRESHOLD && state.axes[idx].value !== axis) {
         console.log('axis #%s changed: %s', idx, axis);
+
+        emit('axismove', axisMoveState);
+
+        var pending = state.axes['pending.' + idx];
+
+        if (!pending) {
+          pending = [];
+        }
+
+        pending.push(axis);
+
+        // Reset the queue every 100 seconds.
+        clearTimeout(waitingForAxisEndTimeout);
+
+        waitingForAxisEndTimeout = setTimeout(function () {
+          var avg = utils.getAverage(pending);
+          if (Math.abs(avg) <= AXIS_THRESHOLD) {
+          } else {
+            if (avg < 0) {
+              roundedAvg = Math.floor(avg);
+            } else {
+              roundedAvg = Math.ceil(avg);
+            }
+          }
+
+          console.log('axis #%s average: %s', idx, roundedAvg);
+
+          var axisChangeState = {
+            index: idx,
+            value: roundedAvg
+          };
+          emit('axischange', axisChangeState);
+
+          pending = [];
+        }, 100);
       }
 
-      state.axes[idx] = axis;
+      state.axes[idx] = axisMoveState;
     });
   });
 }
@@ -216,9 +257,26 @@ function off(name) {
   listeners[name] = [];
 }
 
-function defaultsTo(value, defaultValue) {
+
+var utils = {};
+
+utils.defaultsTo = function (value, defaultValue) {
   return typeof value === 'undefined' ? defaultValue : value;
-}
+};
+
+utils.getAverage = function (list) {
+  var sum = list.reduce(function (a, b) {
+    return a + b;
+  });
+  return sum / list.length;
+};
+
+utils.closest = function (el, sel) {
+  if (el !== null) {
+    return el.matches(sel) ? el :
+      (el.querySelector(sel) || utils.closest(el.parentNode, sel));
+  }
+};
 
 var KEY_PROPS = [
   'altKey',
@@ -340,13 +398,6 @@ function getSyntheticKeyProps(e) {
 }
 
 
-function closest(el, sel) {
-  if (el !== null) {
-    return el.matches(sel) ? el :
-      (el.querySelector(sel) || closest(el.parentNode, sel));
-  }
-}
-
 
 var controlsRowTemplate = document.querySelector('#controlsRowTemplate');
 
@@ -393,13 +444,18 @@ document.body.addEventListener('blur', function (e) {
 
 
 document.body.addEventListener('keypress', function (e) {
+  var parentRow = utils.closest(e.target, 'tr');
+  var parentRowNum = parentRow.getAttribute('data-row');
   var controlDevice = e.target.getAttribute('data-device');
+
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    captures[controlDevice][parentRowNum] = [];
+    e.target.value = '';
+  }
+
   if (controlDevice !== 'keyboard') {
     return;
   }
-
-  var parentRow = closest(e.target, 'tr');
-  var parentRowNum = parentRow.getAttribute('data-row');
 
   if (!(parentRowNum in captures[controlDevice])) {
     captures[controlDevice][parentRowNum] = [];
@@ -408,10 +464,6 @@ document.body.addEventListener('keypress', function (e) {
   var eventProps = getSyntheticKeyProps(e);
 
   captures[controlDevice][parentRowNum].push(eventProps);
-
-  if (e.key === 'Backspace' || e.key === 'Delete') {
-    captures[controlDevice][parentRowNum] = [];
-  }
 
   var capturedKeys = captures[controlDevice][parentRowNum].map(function (x) {
     return x.key;
@@ -438,7 +490,7 @@ on('buttonpress', function (e) {
     return;
   }
 
-  var parentRow = closest(el, 'tr');
+  var parentRow = utils.closest(el, 'tr');
   var parentRowNum = parentRow.getAttribute('data-row');
 
   if (!(parentRowNum in captures.gamepad)) {
@@ -448,7 +500,39 @@ on('buttonpress', function (e) {
   captures.gamepad[parentRowNum].push(e);
 
   var capturedKeys = captures.gamepad[parentRowNum].map(function (x) {
-    return 'button[' + defaultsTo(x.index, 'unknown') + ']';
+    return 'buttons[' + utils.defaultsTo(x.index, 'unknown') + ']';
+  });
+
+  el.value = capturedKeys.join(' + ');
+  addNewRowIfNeeded();
+  var nextKeyboardTextbox = parentRow.querySelector('input[data-device=keyboard]');
+  if (nextKeyboardTextbox) {
+    nextKeyboardTextbox.focus();
+  }
+});
+
+on('axischange', function (e) {
+  var el = document.activeElement;
+  if (!el) {
+    return;
+  }
+
+  var controlDevice = el.getAttribute('data-device');
+  if (controlDevice !== 'gamepad') {
+    return;
+  }
+
+  var parentRow = utils.closest(el, 'tr');
+  var parentRowNum = parentRow.getAttribute('data-row');
+
+  if (!(parentRowNum in captures.gamepad)) {
+    captures.gamepad[parentRowNum] = [];
+  }
+
+  captures.gamepad[parentRowNum].push(e);
+
+  var capturedKeys = captures.gamepad[parentRowNum].map(function (x) {
+    return 'axes[' + utils.defaultsTo(x.index, 'unknown') + ']=' + x.value;
   });
 
   el.value = capturedKeys.join(' + ');
