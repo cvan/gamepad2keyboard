@@ -418,7 +418,9 @@ function addNewRowIfNeeded() {
   }
 }
 
-addNewRow();
+for (var i = 0; i < 5; i++) {
+  addNewRow();
+}
 
 var getLastTextbox = function () {
   return document.querySelector('tr:last-child td:last-child input') || {};
