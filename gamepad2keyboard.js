@@ -430,19 +430,6 @@ var captures = {
 };
 
 
-document.body.addEventListener('focus', function (e) {
-  e.target.setAttribute('data-placeholder', e.target.placeholder);
-  e.target.placeholder = '';
-}, true);
-
-
-document.body.addEventListener('blur', function (e) {
-  if (!e.value) {
-    e.target.placeholder = e.target.getAttribute('data-placeholder')
-  }
-}, true);
-
-
 document.body.addEventListener('keypress', function (e) {
   var parentRow = utils.closest(e.target, 'tr');
   var parentRowNum = parentRow.getAttribute('data-row');
