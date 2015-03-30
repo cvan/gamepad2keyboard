@@ -4,12 +4,25 @@
     <meta charset="utf-8">
     <title>gamepad2keyboard demo</title>
     <style>
-      body { font-family: sans-serif; }
-      input, textarea, select { font-size: 1.5rem; line-height: 1; font-family: inherit; padding: .5rem; }
+      * { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; margin: 0; padding: 0; }
+      html { font-size: 70%; }
+      body { font: 18px/1.5 'helvetica neue', sans-serif; margin: 3rem auto; max-width: 40rem; }
+      input, textarea, select { border: 1px solid #ccc; border-color: #aaa #666 #666 #aaa; display: block; font-size: 1.5rem; font-family: inherit; padding: .5rem; width: 100%; }
+      input:focus { box-shadow: 0 0 2px 2px cyan; }
+      table { border-collapse: collapse; width: 100%; }
+      td { background: #ccc; border: 1px solid #666; }
+      th { background: #666; border: 1px solid #ccc; color: #fff; text-align: left; }
+      td, th { border-width: 1px 0; padding: 1rem; }
     </style>
   </head>
   <body>
     <table class="controlsTable">
+      <thead>
+        <tr>
+          <th>gamepad button</th>
+          <th>keyboard key</th>
+        </tr>
+      </thead>
       <tbody class="controlsTableBody">
       </tbody>
     </table>
