@@ -585,7 +585,7 @@ function updateMappingOutput() {
   };
 
   for (var i = 0; i < Math.max(numKeyboardKeys, numGamepadKeys); i++) {
-    output.keys.push([captures.gamepad[i][0], captures.keyboard[i]]);
+    output.keys.push([captures.gamepad[i][0], captures.keyboard[i][0]]);
   }
 
   controlsMappingEl.value = JSON.stringify(output, null, 2);
